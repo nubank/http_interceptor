@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart';
 
 import 'package:http_interceptor/extensions/extensions.dart';
@@ -26,6 +27,10 @@ class RequestData {
 
   dynamic body;
 
+  Uint8List? bodyBytes;
+
+  Map<String, String>? bodyFields;
+
   /// The encoding used for the request.
   Encoding? encoding;
 
@@ -34,8 +39,10 @@ class RequestData {
     required this.baseUrl,
     Map<String, String>? headers,
     Map<String, dynamic>? params,
-    this.body,
     this.encoding,
+    this.body,
+    this.bodyBytes,
+    this.bodyFields,
   })  : headers = headers ?? {},
         params = params ?? {};
 
@@ -47,7 +54,8 @@ class RequestData {
   ///
   /// For now it only supports [Request].
   /// TODO(codingalecr): Support for [MultipartRequest] and [StreamedRequest].
-  factory RequestData.fromHttpRequest(BaseRequest request) {
+  factory RequestData.fromHttpRequest(BaseRequest request,
+      [BodyType bodyType = BodyType.string]) {
     var params = Map<String, dynamic>();
     request.url.queryParametersAll.forEach((key, value) {
       params[key] = value;
@@ -55,14 +63,27 @@ class RequestData {
     String baseUrl = request.url.origin + request.url.path;
 
     if (request is Request) {
-      return RequestData(
+      final requestData = RequestData(
         method: methodFromString(request.method),
         baseUrl: baseUrl,
         headers: request.headers,
-        body: request.body,
         encoding: request.encoding,
         params: params,
       );
+
+      switch (bodyType) {
+        case BodyType.string:
+          requestData.body = request.body;
+          break;
+        case BodyType.list:
+          requestData.bodyBytes = request.bodyBytes;
+          break;
+        case BodyType.map:
+          requestData.bodyFields = request.bodyFields;
+          break;
+      }
+
+      return requestData;
     }
 
     throw UnsupportedError(
@@ -76,19 +97,20 @@ class RequestData {
 
     Request request = new Request(methodToString(method), reqUrl.toUri());
 
-    request.headers.addAll(headers);
     if (encoding != null) request.encoding = encoding!;
     if (body != null) {
       if (body is String) {
         request.body = body as String;
       } else if (body is List) {
-        request.bodyBytes = body?.cast<int>();
+        request.bodyBytes = bodyBytes!;
       } else if (body is Map) {
-        request.bodyFields = body.cast<String, String>();
+        request.bodyFields = bodyFields!;
       } else {
         throw new ArgumentError('Invalid request body "$body".');
       }
     }
+
+    request.headers.addAll(headers);
 
     return request;
   }

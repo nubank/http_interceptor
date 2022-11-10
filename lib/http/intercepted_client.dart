@@ -34,6 +34,9 @@ import 'interceptor_contract.dart';
 ///the connection alive with the server.
 ///
 ///Note: `send` method is not currently supported.
+///
+enum BodyType { string, list, map }
+
 class InterceptedClient extends BaseClient {
   List<InterceptorContract> interceptors;
   Duration? requestTimeout;
@@ -197,22 +200,27 @@ class InterceptedClient extends BaseClient {
   }) async {
     url = url.addParameters(params);
 
+    late BodyType bodyType;
+
     Request request = new Request(methodToString(method), url);
     if (headers != null) request.headers.addAll(headers);
     if (encoding != null) request.encoding = encoding;
     if (body != null) {
       if (body is String) {
+        bodyType = BodyType.string;
         request.body = body;
       } else if (body is List) {
+        bodyType = BodyType.list;
         request.bodyBytes = body.cast<int>();
       } else if (body is Map) {
+        bodyType = BodyType.map;
         request.bodyFields = body.cast<String, String>();
       } else {
         throw new ArgumentError('Invalid request body "$body".');
       }
     }
 
-    var response = await _attemptRequest(request);
+    var response = await _attemptRequest(request, bodyType);
 
     // Intercept response
     response = await _interceptResponse(response);
@@ -231,11 +239,11 @@ class InterceptedClient extends BaseClient {
 
   /// Attempts to perform the request and intercept the data
   /// of the response
-  Future<Response> _attemptRequest(Request request) async {
+  Future<Response> _attemptRequest(Request request, BodyType bodyType) async {
     var response;
     try {
       // Intercept request
-      final interceptedRequest = await _interceptRequest(request);
+      final interceptedRequest = await _interceptRequest(request, bodyType);
 
       var stream = requestTimeout == null
           ? await send(interceptedRequest)
@@ -247,14 +255,14 @@ class InterceptedClient extends BaseClient {
           await retryPolicy!.shouldAttemptRetryOnResponse(
               ResponseData.fromHttpResponse(response))) {
         _retryCount += 1;
-        return _attemptRequest(request);
+        return _attemptRequest(request, bodyType);
       }
     } on Exception catch (error) {
       if (retryPolicy != null &&
           retryPolicy!.maxRetryAttempts > _retryCount &&
           retryPolicy!.shouldAttemptRetryOnException(error)) {
         _retryCount += 1;
-        return _attemptRequest(request);
+        return _attemptRequest(request, bodyType);
       } else {
         rethrow;
       }
@@ -265,10 +273,10 @@ class InterceptedClient extends BaseClient {
   }
 
   /// This internal function intercepts the request.
-  Future<Request> _interceptRequest(Request request) async {
+  Future<Request> _interceptRequest(Request request, BodyType bodyType) async {
     for (InterceptorContract interceptor in interceptors) {
       RequestData interceptedData = await interceptor.interceptRequest(
-        data: RequestData.fromHttpRequest(request),
+        data: RequestData.fromHttpRequest(request, bodyType),
       );
       request = interceptedData.toHttpRequest();
     }

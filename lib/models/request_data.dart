@@ -55,7 +55,7 @@ class RequestData {
   /// For now it only supports [Request].
   /// TODO(codingalecr): Support for [MultipartRequest] and [StreamedRequest].
   factory RequestData.fromHttpRequest(BaseRequest request,
-      [BodyType bodyType = BodyType.string]) {
+      [BodyType? bodyType]) {
     var params = Map<String, dynamic>();
     request.url.queryParametersAll.forEach((key, value) {
       params[key] = value;
@@ -80,6 +80,8 @@ class RequestData {
           break;
         case BodyType.map:
           requestData.bodyFields = request.bodyFields;
+          break;
+        default:
           break;
       }
 

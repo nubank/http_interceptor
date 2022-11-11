@@ -84,13 +84,14 @@ class InterceptedClient extends BaseClient {
     Uri url, {
     Map<String, String>? headers,
     Map<String, dynamic>? params,
-  }) =>
-      _sendUnstreamed(
-        method: Method.GET,
-        url: url,
-        headers: headers,
-        params: params,
-      );
+  }) {
+    return _sendUnstreamed(
+      method: Method.GET,
+      url: url,
+      headers: headers,
+      params: params,
+    );
+  }
 
   @override
   Future<Response> post(
@@ -200,7 +201,7 @@ class InterceptedClient extends BaseClient {
   }) async {
     url = url.addParameters(params);
 
-    late BodyType bodyType;
+    BodyType? bodyType = null;
 
     Request request = new Request(methodToString(method), url);
     if (headers != null) request.headers.addAll(headers);
@@ -220,12 +221,20 @@ class InterceptedClient extends BaseClient {
       }
     }
 
-    var response = await _attemptRequest(request, bodyType);
+    print(
+        'vovo - INterceptedClient._sendUnstreamed - before attempting request');
 
-    // Intercept response
-    response = await _interceptResponse(response);
+    try {
+      var response = await _attemptRequest(request, bodyType);
+      // Intercept response
+      response = await _interceptResponse(response);
 
-    return response;
+      return response;
+    } catch (e, st) {
+      print(
+          'vovo - INterceptedClient._sendUnstreamed - error: $e\n stacktrace: $st');
+      rethrow;
+    }
   }
 
   void _checkResponseSuccess(Uri url, Response response) {
@@ -239,11 +248,16 @@ class InterceptedClient extends BaseClient {
 
   /// Attempts to perform the request and intercept the data
   /// of the response
-  Future<Response> _attemptRequest(Request request, BodyType bodyType) async {
+  Future<Response> _attemptRequest(Request request, BodyType? bodyType) async {
     var response;
     try {
+      print(
+          'vovo - InterceptedClient._attemptRequest: before interceptedRequest');
       // Intercept request
       final interceptedRequest = await _interceptRequest(request, bodyType);
+
+      print(
+          'vovo - InterceptedClient._attemptRequest: interceptedRequest: $interceptedRequest');
 
       var stream = requestTimeout == null
           ? await send(interceptedRequest)
@@ -273,7 +287,7 @@ class InterceptedClient extends BaseClient {
   }
 
   /// This internal function intercepts the request.
-  Future<Request> _interceptRequest(Request request, BodyType bodyType) async {
+  Future<Request> _interceptRequest(Request request, BodyType? bodyType) async {
     for (InterceptorContract interceptor in interceptors) {
       RequestData interceptedData = await interceptor.interceptRequest(
         data: RequestData.fromHttpRequest(request, bodyType),

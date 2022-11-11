@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:test/test.dart';
 import 'package:http/http.dart';
 import 'package:http_interceptor/http/http.dart';
@@ -149,6 +147,29 @@ main() {
 
     // Assert
     expect(requestData, isNotNull);
+    expect(requestData.body, isNull);
+    expect(requestData.bodyBytes, isNull);
+    expect(requestData.bodyFields, equals({'field': 'value'}));
+    expect(requestData.method, equals(Method.PUT));
+    expect(
+        requestData.url,
+        equals(
+            "https://www.google.com/helloworld?key=123ABC&name=Hugo&type=3"));
+  });
+  test("can be instatiated from HTTP PUT Request with null body", () {
+    // Arrange
+    Uri url = Uri.parse(
+        "https://www.google.com/helloworld?key=123ABC&name=Hugo&type=3");
+
+    Request request = Request("PUT", url);
+    request.bodyFields = {'field': 'value'};
+    RequestData requestData;
+
+    // Act
+    requestData = RequestData.fromHttpRequest(request);
+
+    // Assert
+    expect(requestData, isNull);
     expect(requestData.body, isNull);
     expect(requestData.bodyBytes, isNull);
     expect(requestData.bodyFields, equals({'field': 'value'}));

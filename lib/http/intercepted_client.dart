@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
-import 'package:http_interceptor/models/models.dart';
 import 'package:http_interceptor/extensions/extensions.dart';
+import 'package:http_interceptor/models/models.dart';
 
 import 'http_methods.dart';
 import 'interceptor_contract.dart';
@@ -60,14 +60,16 @@ class InterceptedClient extends BaseClient {
     RetryPolicy? retryPolicy,
     String Function(Uri)? findProxy,
     Client? client,
-  }) =>
-      InterceptedClient._internal(
-        interceptors: interceptors,
-        requestTimeout: requestTimeout,
-        retryPolicy: retryPolicy,
-        findProxy: findProxy,
-        client: client,
-      );
+  }) {
+    print('vovo - InterceptedClient - build - client: $client');
+    return InterceptedClient._internal(
+      interceptors: interceptors,
+      requestTimeout: requestTimeout,
+      retryPolicy: retryPolicy,
+      findProxy: findProxy,
+      client: client,
+    );
+  }
 
   @override
   Future<Response> head(
@@ -117,15 +119,19 @@ class InterceptedClient extends BaseClient {
     Map<String, dynamic>? params,
     Object? body,
     Encoding? encoding,
-  }) =>
-      _sendUnstreamed(
-        method: Method.PUT,
-        url: url,
-        headers: headers,
-        params: params,
-        body: body,
-        encoding: encoding,
-      );
+  }) {
+    print('vovo - InterceptedClient - put - url: ${url.toString()}');
+    print('vovo - InterceptedClient - put - encoding: $encoding');
+    print('vovo - InterceptedClient - put - _inner: $_inner');
+    return _sendUnstreamed(
+      method: Method.PUT,
+      url: url,
+      headers: headers,
+      params: params,
+      body: body,
+      encoding: encoding,
+    );
+  }
 
   @override
   Future<Response> patch(
@@ -188,6 +194,7 @@ class InterceptedClient extends BaseClient {
   // TODO(codingalecr): Implement interception from `send` method.
   @override
   Future<StreamedResponse> send(BaseRequest request) {
+    print('vovo - InterceptedClient - send');
     return _inner.send(request);
   }
 
@@ -206,14 +213,26 @@ class InterceptedClient extends BaseClient {
     Request request = new Request(methodToString(method), url);
     if (headers != null) request.headers.addAll(headers);
     if (encoding != null) request.encoding = encoding;
+
+    print('vovo - InterceptedClient - _sendUnstreamed - encoding = $encoding');
+    print('vovo - InterceptedClient - _sendUnstreamed - body = $body');
+
     if (body != null) {
       if (body is String) {
+        print('vovo - InterceptedClient - _sendUnstreamed - body STRING');
+        print(
+            'vovo - InterceptedClient - _sendUnstreamed - body len = ${body.length}');
         bodyType = BodyType.string;
         request.body = body;
       } else if (body is List) {
+        print('vovo - InterceptedClient - _sendUnstreamed - body LIST');
         bodyType = BodyType.list;
-        request.bodyBytes = body.cast<int>();
+        final lala = body.cast<int>();
+        print(
+            'vovo - InterceptedClient - _sendUnstreamed - body len = ${lala.length}');
+        request.bodyBytes = lala;
       } else if (body is Map) {
+        print('vovo - InterceptedClient - _sendUnstreamed - body MAP');
         bodyType = BodyType.map;
         request.bodyFields = body.cast<String, String>();
       } else {
@@ -222,7 +241,7 @@ class InterceptedClient extends BaseClient {
     }
 
     print(
-        'vovo - INterceptedClient._sendUnstreamed - before attempting request');
+        'vovo - InterceptedClient - _sendUnstreamed - before attempting request');
 
     try {
       var response = await _attemptRequest(request, bodyType);
@@ -252,12 +271,12 @@ class InterceptedClient extends BaseClient {
     var response;
     try {
       print(
-          'vovo - InterceptedClient._attemptRequest: before interceptedRequest');
+          'vovo - InterceptedClient - _attemptRequest: before interceptedRequest');
       // Intercept request
       final interceptedRequest = await _interceptRequest(request, bodyType);
 
       print(
-          'vovo - InterceptedClient._attemptRequest: interceptedRequest: $interceptedRequest');
+          'vovo - InterceptedClient - _attemptRequest: interceptedRequest: $interceptedRequest');
 
       var stream = requestTimeout == null
           ? await send(interceptedRequest)
@@ -288,12 +307,32 @@ class InterceptedClient extends BaseClient {
 
   /// This internal function intercepts the request.
   Future<Request> _interceptRequest(Request request, BodyType? bodyType) async {
+    print(
+        'vovo - InterceptedClient - _interceptRequest1 - request.encoding = ${request.encoding}');
+    print(
+        'vovo - InterceptedClient - _interceptRequest1 - request.bodyBytes.length = ${request.bodyBytes.length}');
+    // print(
+    //     'vovo - InterceptedClient - _interceptRequest1 - request.body.length = ${request.body.length}');
+    // print(
+    //     'vovo - InterceptedClient - _interceptRequest1 - request.body.contentLength = ${request.contentLength}');
+
     for (InterceptorContract interceptor in interceptors) {
       RequestData interceptedData = await interceptor.interceptRequest(
         data: RequestData.fromHttpRequest(request, bodyType),
       );
       request = interceptedData.toHttpRequest();
     }
+
+    print(
+        'vovo - InterceptedClient - _interceptRequest2 - request.encoding = ${request.encoding}');
+    print(
+        'vovo - InterceptedClient - _interceptRequest2 - request.headers = ${request.headers}');
+    // print(
+    //     'vovo - InterceptedClient - _interceptRequest2 - request.bodyBytes.length = ${request.bodyBytes.length}');
+    // print(
+    //     'vovo - InterceptedClient - _interceptRequest2 - request.body.length = ${request.body.length}');
+    // print(
+    //     'vovo - InterceptedClient - _interceptRequest2 - request.body.contentLength = ${request.contentLength}');
 
     return request;
   }

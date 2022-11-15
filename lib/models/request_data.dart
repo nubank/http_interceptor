@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:http/http.dart';
 
+import 'package:http/http.dart';
 import 'package:http_interceptor/extensions/extensions.dart';
 import 'package:http_interceptor/http/http.dart';
 import 'package:http_interceptor/utils/utils.dart';
@@ -73,10 +73,22 @@ class RequestData {
 
       switch (bodyType) {
         case BodyType.string:
+          print(
+              'vovo - RequestData - fromHttpRequest - request.body.length = ${request.body.length}');
+
           requestData.body = request.body;
+          print(
+              'vovo - RequestData - fromHttpRequest - requestData.body?.length = ${requestData.body?.length}');
+
           break;
         case BodyType.list:
+          print(
+              'vovo - RequestData - fromHttpRequest - request.bodyBytes.length = ${request.bodyBytes.length}');
+
           requestData.bodyBytes = request.bodyBytes;
+          print(
+              'vovo - RequestData - fromHttpRequest - requestData.bodyBytes?.length = ${requestData.bodyBytes?.length}');
+
           break;
         case BodyType.map:
           requestData.bodyFields = request.bodyFields;
@@ -84,7 +96,8 @@ class RequestData {
         default:
           break;
       }
-
+      print(
+          'vovo - RequestData - fromHttpRequest - requestData.encoding = ${requestData.encoding}');
       return requestData;
     }
 
@@ -100,20 +113,55 @@ class RequestData {
     Request request = new Request(methodToString(method), reqUrl.toUri());
 
     if (encoding != null) request.encoding = encoding!;
+
+    print('vovo - RequestData - toHttpRequest - encoding = ${encoding}');
+    print('vovo - RequestData - toHttpRequest - body = ${body}');
+    print('vovo - RequestData - toHttpRequest - bodyBytes = ${bodyBytes}');
     if (body != null) {
+      print('vovo - RequestData - toHttpRequest - body != NULL');
       if (body is String) {
+        print('vovo - RequestData - toHttpRequest - body STRING');
+        print('vovo - RequestData - toHttpRequest - body = ${body as String}');
         request.body = body as String;
+        print(
+            'vovo - RequestData - toHttpRequest - request.body = ${request.body}');
       } else if (body is List) {
+        print('vovo - RequestData - toHttpRequest - body LIST');
+        print(
+            'vovo - RequestData - toHttpRequest - body = ${bodyBytes?.length}');
         request.bodyBytes = bodyBytes!;
+        print(
+            'vovo - RequestData - toHttpRequest - request.bodyBytes = ${request.bodyBytes}');
       } else if (body is Map) {
+        print('vovo - RequestData - toHttpRequest - body MAP');
         request.bodyFields = bodyFields!;
       } else {
         throw new ArgumentError('Invalid request body "$body".');
       }
+    } else if (bodyBytes != null) {
+      print('vovo - RequestData - toHttpRequest - bodyBytes != null');
+      if (bodyBytes is List) {
+        print('vovo - RequestData - toHttpRequest - bodyBytes LIST');
+        print(
+            'vovo - RequestData - toHttpRequest - body = ${bodyBytes?.length}');
+        request.bodyBytes = bodyBytes!;
+        print(
+            'vovo - RequestData - toHttpRequest - request.bodyBytes = ${request.bodyBytes}');
+      } else {
+        throw new ArgumentError('Invalid request bodyBytes "$bodyBytes".');
+      }
+    } else if (bodyFields != null) {
+      print('vovo - RequestData - toHttpRequest - bodyFields != null');
+      if (bodyFields is Map) {
+        print('vovo - RequestData - toHttpRequest - bodyFields MAP');
+        request.bodyFields = bodyFields!;
+      } else {
+        throw new ArgumentError('Invalid request bodyFields "$bodyFields".');
+      }
     }
 
     request.headers.addAll(headers);
-
+    print('vovo - RequestData - toHttpRequest - encoding = ${encoding}');
     return request;
   }
 

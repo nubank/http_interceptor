@@ -307,6 +307,7 @@ class InterceptedClient extends BaseClient {
 
   /// This internal function intercepts the request.
   Future<Request> _interceptRequest(Request request, BodyType? bodyType) async {
+    print('vovo - InterceptedClient - _interceptRequest - INIT');
     print(
         'vovo - InterceptedClient - _interceptRequest1 - request.encoding = ${request.encoding}');
     print(
@@ -317,6 +318,8 @@ class InterceptedClient extends BaseClient {
     //     'vovo - InterceptedClient - _interceptRequest1 - request.body.contentLength = ${request.contentLength}');
 
     for (InterceptorContract interceptor in interceptors) {
+      print(
+          'vovo - InterceptedClient - _interceptRequest - interceptor = $interceptor');
       RequestData interceptedData = await interceptor.interceptRequest(
         data: RequestData.fromHttpRequest(request, bodyType),
       );
@@ -327,25 +330,22 @@ class InterceptedClient extends BaseClient {
         'vovo - InterceptedClient - _interceptRequest2 - request.encoding = ${request.encoding}');
     print(
         'vovo - InterceptedClient - _interceptRequest2 - request.headers = ${request.headers}');
-    // print(
-    //     'vovo - InterceptedClient - _interceptRequest2 - request.bodyBytes.length = ${request.bodyBytes.length}');
-    // print(
-    //     'vovo - InterceptedClient - _interceptRequest2 - request.body.length = ${request.body.length}');
-    // print(
-    //     'vovo - InterceptedClient - _interceptRequest2 - request.body.contentLength = ${request.contentLength}');
-
+    print('vovo - InterceptedClient - _interceptRequest - END');
     return request;
   }
 
   /// This internal function intercepts the response.
   Future<Response> _interceptResponse(Response response) async {
+    print('vovo - InterceptedClient - _interceptResponse - INIT');
     for (InterceptorContract interceptor in interceptors) {
+      print(
+          'vovo - InterceptedClient - _interceptResponse - interceptor = $interceptor');
       ResponseData responseData = await interceptor.interceptResponse(
         data: ResponseData.fromHttpResponse(response),
       );
       response = responseData.toHttpResponse();
     }
-
+    print('vovo - InterceptedClient - _interceptResponse - END');
     return response;
   }
 

@@ -56,6 +56,8 @@ class RequestData {
   /// TODO(codingalecr): Support for [MultipartRequest] and [StreamedRequest].
   factory RequestData.fromHttpRequest(BaseRequest request,
       [BodyType? bodyType]) {
+    print(
+        'vovo - RequestData - fromHttpRequest - request.host = ${request.url.host}');
     var params = Map<String, dynamic>();
     request.url.queryParametersAll.forEach((key, value) {
       params[key] = value;
@@ -109,7 +111,8 @@ class RequestData {
   /// Converts this request data to an HTTP request.
   Request toHttpRequest() {
     var reqUrl = buildUrlString(baseUrl, params);
-
+    print(
+        'vovo - RequestData - toHttpRequest - request.host = ${reqUrl.toUri().host}');
     Request request = new Request(methodToString(method), reqUrl.toUri());
 
     if (encoding != null) request.encoding = encoding!;
